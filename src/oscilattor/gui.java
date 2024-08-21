@@ -1,4 +1,6 @@
 package oscilattor;
+import oscilattor.utils.utils;
+
 import javax.swing.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -6,39 +8,70 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.*;
 public class gui {
-    private final JFrame window = new JFrame("Oscilattor");
-    private boolean shouldGenerate;
-    private int wavePosition;
+    private boolean shouldGenerate; //boolean flag to control if audio should be playing
+    private int wavePosition;//position of the audio signal
+    private Oscilattor[] oscilattors = new Oscilattor[3];
+    private static final HashMap<Character,Double> KEY_FREQ = new HashMap<>(); //Hashmap in order to store the characters of the midi controller and the frequencies that correlate to that note
+
+    static{
+        final int Starting_key = 16;
+        final int key_freq_increment = 2;
+        final char[] keys = "zxcvbnm,./asdfghjkl;'#qwertyuiop[]".toCharArray();
+        for(int i = Starting_key, key = 0; i < keys.length * key_freq_increment + Starting_key; i+=key_freq_increment,++key){
+            KEY_FREQ.put(keys[key],utils.MathHandle.frequencyMath(i));
+        }
+
+        for(double d: KEY_FREQ.values()){
+            System.out.println(d);
+        }
+    }
     private final AudioThread thread = new AudioThread(() ->{
         if(!shouldGenerate){
             return null;
         }
         short[] s = new short[AudioThread.BUFFER_SIZE];
-        for(int i = 0; i < AudioThread.BUFFER_SIZE; ++i){
-            s[i] = (short)(Short.MAX_VALUE * Math.sin((2*Math.PI * 440) / AudioInformation.SAMPLE_RATE*wavePosition++));
+        for(int i = 0; i < AudioThread.BUFFER_SIZE; i++){
+            double d = 0;
+            for(Oscilattor o : oscilattors){
+                d+= o.nextSample() / oscilattors.length;
+            }
+            s[i] = (short)(Short.MAX_VALUE * d);
         }
         return s;
     });
 
-    /*/
-    constructor used to set the properties for the JFrame Window
-     */
-    public gui(){
-        window.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if(!thread.isRunning()){
-                    shouldGenerate = true;
-                    thread.playBack();
+    private final KeyAdapter keyListener = new KeyAdapter() {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            if(!thread.isRunning()){
+                for(Oscilattor o: oscilattors){
 
                 }
-            }
-            @Override
-            public void keyReleased(KeyEvent e) {
-                shouldGenerate = false;
+                shouldGenerate = true;
+                thread.playBack();
 
             }
-        });
+        }
+        @Override
+        public void keyReleased(KeyEvent e) {
+            shouldGenerate = false;
+
+        }
+    };
+
+    /*/
+    constructor used to set the properties for the JFrame Window and to take in MIDI Input
+     */
+    public gui(){
+        JFrame window = new JFrame("Oscilattor");
+        int y  = 0;
+        for(int i = 0; i < oscilattors.length; i++){
+            oscilattors[i] = new Oscilattor(this);
+            oscilattors[i].setLocation(5,y);
+            window.add(oscilattors[i]);
+            y += 105;
+        }
+        window.addKeyListener(keyListener);
         window.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -46,13 +79,20 @@ public class gui {
             }
         });
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        window.setSize(600,300);
+        window.setSize(600,350);
         window.setResizable(false);
         window.setLayout(null);
         window.setLocationRelativeTo(null);
         window.setVisible(true);
     }
 
+    public KeyAdapter getKeyListener() {
+        return keyListener;
+    }
+
+    /*/
+        Set the Sample_Rate for the audio thread of 44100;
+         */
     public static class AudioInformation{
         public static int SAMPLE_RATE = 44100;
     }
