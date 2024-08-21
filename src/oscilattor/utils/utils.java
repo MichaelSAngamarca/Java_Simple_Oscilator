@@ -41,4 +41,16 @@ public class utils {
             return pow(2,((double) (keyNumber - 49) /12)) * 440;
         }
     }
+
+    public static class parameterHandling{
+        public static final Robot PARAMETER_ROBOT;
+        static{
+            try{
+                PARAMETER_ROBOT = new Robot();
+            }
+            catch (AWTException e){
+                throw new ExceptionInInitializerError("Cannot Construct Robot");
+            }
+        }
+    }
 }

@@ -13,7 +13,7 @@ import java.awt.image.BufferedImage;
 import java.util.Random;
 
 public class Oscilattor extends SynthContorllerContainer {
-    private static final int TONE_OFFSET_LIMIT = 2000;
+    private static final int TONE_OFFSET_LIMIT = 200;
     private waveForms waveForm = waveForms.SINE;
     private int wavePosition;
     private final Random random = new Random();
@@ -62,8 +62,10 @@ public class Oscilattor extends SynthContorllerContainer {
                     } else if (!mouseUp && toneOffset > -TONE_OFFSET_LIMIT) {
                         --toneOffset;
                     }
+                    applyToneOffest();
                     toneParameter.setText("x" + String.format("%.3f",getToneOffset()));
                 }
+                utils.parameterHandling.PARAMETER_ROBOT.mouseMove(mouseLocation.x, mouseLocation.y);
             }
         });
         add(toneParameter);
@@ -79,12 +81,18 @@ public class Oscilattor extends SynthContorllerContainer {
     public double getKeyFrequency(){
         return FREQUENCY;
     }
-    public void setFrequency(double frequency){
+
+    public void setKeyFrequency(double frequency){
         keyFrequency = this.FREQUENCY= frequency;
+        applyToneOffest();
     }
 
     private double getToneOffset(){
-        return toneOffset / 1000d;
+        return toneOffset / 100d;
+    }
+
+    private void applyToneOffest(){
+        FREQUENCY = keyFrequency * Math.pow(2,getToneOffset());
     }
     /*/
     enum that is used to represent the 5 essential wave forms

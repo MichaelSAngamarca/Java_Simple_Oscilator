@@ -20,10 +20,6 @@ public class gui {
         for(int i = Starting_key, key = 0; i < keys.length * key_freq_increment + Starting_key; i+=key_freq_increment,++key){
             KEY_FREQ.put(keys[key],utils.MathHandle.frequencyMath(i));
         }
-
-        for(double d: KEY_FREQ.values()){
-            System.out.println(d);
-        }
     }
     private final AudioThread thread = new AudioThread(() ->{
         if(!shouldGenerate){
@@ -45,11 +41,10 @@ public class gui {
         public void keyPressed(KeyEvent e) {
             if(!thread.isRunning()){
                 for(Oscilattor o: oscilattors){
-
+                    o.setKeyFrequency(KEY_FREQ.get(e.getKeyChar()));
                 }
                 shouldGenerate = true;
                 thread.playBack();
-
             }
         }
         @Override
