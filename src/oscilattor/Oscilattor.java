@@ -11,27 +11,26 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.util.Random;
-
 public class Oscilattor extends SynthContorllerContainer {
     private static final int TONE_OFFSET_LIMIT = 200;
-    private waveForms waveForm = waveForms.SINE;
-    private int wavePosition;
-    private final Random random = new Random();
-    private double FREQUENCY;
     private double keyFrequency;
     private int toneOffset;
+    private int waveTableStepSize; //step size of each frame of the wave table
+    private int waveTableIndex; // index of each frame we are on in the wave table
+
+    private WaveTable waveTable = WaveTable.SINE;
     /*/
     Constructor that creates the basis of the design for a simple oscillator
      */
     public Oscilattor(gui synth) {
         super(synth);
-        JComboBox<waveForms> waveFormsJComboBox = new JComboBox<>(waveForms.values());
+        JComboBox<WaveTable> waveFormsJComboBox = new JComboBox<>(WaveTable.values());
+        waveFormsJComboBox.setSelectedItem(WaveTable.SINE);
         waveFormsJComboBox.setSelectedIndex(0);
         waveFormsJComboBox.setBounds(10,10,75,25);
         waveFormsJComboBox.addItemListener(listner -> {
             if(listner.getStateChange() == ItemEvent.SELECTED){
-                waveForm = waveForms.valueOf(waveFormsJComboBox.getSelectedItem().toString());
-                System.out.println(waveForm);
+                waveTable = (WaveTable) listner.getItem();
             }
         });
         add(waveFormsJComboBox);
@@ -78,12 +77,8 @@ public class Oscilattor extends SynthContorllerContainer {
 
     }
 
-    public double getKeyFrequency(){
-        return FREQUENCY;
-    }
-
     public void setKeyFrequency(double frequency){
-        keyFrequency = this.FREQUENCY= frequency;
+        keyFrequency = frequency;
         applyToneOffest();
     }
 
@@ -92,30 +87,16 @@ public class Oscilattor extends SynthContorllerContainer {
     }
 
     private void applyToneOffest(){
-        FREQUENCY = keyFrequency * Math.pow(2,getToneOffset());
-    }
-    /*/
-    enum that is used to represent the 5 essential wave forms
-     */
-    private enum waveForms{
-        SINE,SAW,SQUARE,TRIANGLE,NOISE
+        waveTableStepSize = (int)(WaveTable.sizeOfWaveTable * (keyFrequency * Math.pow(2,getToneOffset())) / gui.AudioInformation.SAMPLE_RATE);
     }
 
+    /*/
+    nextSample is used to obtain teh next sample in teh wave table
+
+     */
     public double nextSample(){
-        double tDivP = (wavePosition++ / (double) gui.AudioInformation.SAMPLE_RATE) / (1d/FREQUENCY);
-        switch (waveForm){
-            case SINE:
-                return Math.sin(utils.MathHandle.frequencyConverter(FREQUENCY) * wavePosition / gui.AudioInformation.SAMPLE_RATE);
-            case SAW:
-                return 2d*(tDivP - Math.floor(0.5 + tDivP));
-            case SQUARE:
-                return Math.signum(Math.sin(utils.MathHandle.frequencyConverter(FREQUENCY) * wavePosition / gui.AudioInformation.SAMPLE_RATE));
-            case TRIANGLE:
-                return 2d * Math.abs(2d*(tDivP - Math.floor(0.5 + tDivP))) - 1;
-            case NOISE:
-                return random.nextDouble();
-            default:
-                throw new RuntimeException("Unkown WaveSignal");
-        }
+        double sample = waveTable.getWaveTableSample()[waveTableIndex];
+        waveTableIndex = (waveTableIndex + waveTableStepSize) % WaveTable.sizeOfWaveTable;
+        return sample;
     }
 }

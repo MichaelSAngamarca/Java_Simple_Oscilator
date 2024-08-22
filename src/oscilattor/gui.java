@@ -39,6 +39,9 @@ public class gui {
     private final KeyAdapter keyListener = new KeyAdapter() {
         @Override
         public void keyPressed(KeyEvent e) {
+            if(!KEY_FREQ.containsKey(e.getKeyChar())){
+                return;
+            }
             if(!thread.isRunning()){
                 for(Oscilattor o: oscilattors){
                     o.setKeyFrequency(KEY_FREQ.get(e.getKeyChar()));
