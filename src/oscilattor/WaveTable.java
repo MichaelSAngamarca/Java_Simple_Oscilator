@@ -8,7 +8,6 @@ enum WaveTable {
     static final int sizeOfWaveTable = 8192; //size of the wave table I am using
 
     private final float [] waveTableSample = new float[sizeOfWaveTable]; //float array that is used to represent all the samples contained in the wave table
-
     static{
 
         final double fundementalFrequency = 1d/((double) sizeOfWaveTable / gui.AudioInformation.SAMPLE_RATE); // this is the fundamental frequency for all samples in the wave table

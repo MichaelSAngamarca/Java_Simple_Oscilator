@@ -1,23 +1,16 @@
 package oscilattor;
 
+import oscilattor.utils.RefWrapper;
 import oscilattor.utils.utils;
-
 import javax.swing.*;
-import javax.tools.Tool;
-import java.awt.*;
 import java.awt.event.ItemEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.image.BufferedImage;
-import java.util.Random;
 public class Oscilattor extends SynthContorllerContainer {
     private static final int TONE_OFFSET_LIMIT = 200;
     private double keyFrequency;
-    private int toneOffset;
+    private RefWrapper<Integer> toneOffset = new RefWrapper<>(0);
+    private RefWrapper<Integer> volume = new RefWrapper<>(100);
     private int waveTableStepSize; //step size of each frame of the wave table
     private int waveTableIndex; // index of each frame we are on in the wave table
-
     private WaveTable waveTable = WaveTable.SINE;
     /*/
     Constructor that creates the basis of the design for a simple oscillator
@@ -32,71 +25,76 @@ public class Oscilattor extends SynthContorllerContainer {
             if(listner.getStateChange() == ItemEvent.SELECTED){
                 waveTable = (WaveTable) listner.getItem();
             }
+            synth.updateWaveViewer();
         });
         add(waveFormsJComboBox);
         JLabel toneParameter = new JLabel("x0.00");
         toneParameter.setBounds(165,65,50,25);
         toneParameter.setBorder(utils.windowDesign.line_border);
-        toneParameter.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                final Cursor MOUSE_CURSOR = Toolkit.getDefaultToolkit().createCustomCursor(new BufferedImage(16,16,BufferedImage.TYPE_INT_ARGB), new Point(0, 0), "mouseCursor");
-                setCursor(MOUSE_CURSOR);
-                mouseLocation = e.getLocationOnScreen();
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                setCursor(Cursor.getDefaultCursor());
-            }
-        });
-        toneParameter.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                if(mouseLocation.y != e.getYOnScreen()){
-                    boolean mouseUp = mouseLocation.y - e.getYOnScreen() > 0;
-                    if(mouseUp && toneOffset < TONE_OFFSET_LIMIT){
-                        toneOffset++;
-
-                    } else if (!mouseUp && toneOffset > -TONE_OFFSET_LIMIT) {
-                        --toneOffset;
-                    }
-                    applyToneOffest();
-                    toneParameter.setText("x" + String.format("%.3f",getToneOffset()));
-                }
-                utils.parameterHandling.PARAMETER_ROBOT.mouseMove(mouseLocation.x, mouseLocation.y);
-            }
+        utils.parameterHandling.addParameterMouseListeners(toneParameter,this,-TONE_OFFSET_LIMIT,TONE_OFFSET_LIMIT,1,toneOffset,() ->{
+            applyToneOffest();
+            toneParameter.setText(" x" + String.format("%.3f",getToneOffset()));
+            synth.updateWaveViewer();
         });
         add(toneParameter);
         JLabel toneText = new JLabel("Tone");
         toneText.setBounds(172,40,75,25);
         add(toneText);
+
+        JLabel volumeParameter = new JLabel("100%");
+        volumeParameter.setBounds(222,65,50,25);
+        volumeParameter.setBorder(utils.windowDesign.line_border);
+        utils.parameterHandling.addParameterMouseListeners(volumeParameter,this,0,100,1,volume,() ->
+        {
+            volumeParameter.setText(" " + volume.value + "%");
+            synth.updateWaveViewer();
+        });
+        add(volumeParameter);
+        JLabel volumeText = new JLabel("Volume");
+        volumeText.setBounds(222,40,75,25);
+        add(volumeText);
+
         setSize(279,100); //set the size of the panel on the main jframe gui
         setBorder(utils.windowDesign.line_border);//calls the class windowDesign in the utils class that is used as a template to easily create these panels
         setLayout(null);
 
     }
 
+    /*/
+   nextSample is used to obtain teh next sample in teh wave table
+
+    */
+    public double nextSample(){
+        double sample = waveTable.getWaveTableSample()[waveTableIndex] * getVolumeMultiplier();
+        waveTableIndex = (waveTableIndex + waveTableStepSize) % WaveTable.sizeOfWaveTable;
+        return sample;
+    }
+
     public void setKeyFrequency(double frequency){
         keyFrequency = frequency;
         applyToneOffest();
     }
+    private double getVolumeMultiplier(){
+        return volume.value / 100.0;
+    }
 
     private double getToneOffset(){
-        return toneOffset / 100d;
+        return toneOffset.value/ 1000d;
+    }
+
+    public double[] getSampleWaveForm(int numberOfSamples){
+        double[] samples = new double[numberOfSamples];
+        double frequency = 1.0/(numberOfSamples / (double)gui.AudioInformation.SAMPLE_RATE);
+        int index  = 0;
+        int stepSize = (int)(WaveTable.sizeOfWaveTable * utils.MathHandle.offSetTone(frequency, getToneOffset()) / gui.AudioInformation.SAMPLE_RATE);
+        for(int i = 0; i < numberOfSamples; i++){
+            samples[i] = waveTable.getWaveTableSample()[index] * getVolumeMultiplier();
+            index = (index + stepSize) % WaveTable.sizeOfWaveTable;
+        }
+        return samples;
     }
 
     private void applyToneOffest(){
-        waveTableStepSize = (int)(WaveTable.sizeOfWaveTable * (keyFrequency * Math.pow(2,getToneOffset())) / gui.AudioInformation.SAMPLE_RATE);
-    }
-
-    /*/
-    nextSample is used to obtain teh next sample in teh wave table
-
-     */
-    public double nextSample(){
-        double sample = waveTable.getWaveTableSample()[waveTableIndex];
-        waveTableIndex = (waveTableIndex + waveTableStepSize) % WaveTable.sizeOfWaveTable;
-        return sample;
+        waveTableStepSize = (int)(WaveTable.sizeOfWaveTable * utils.MathHandle.offSetTone(keyFrequency, getToneOffset()) / gui.AudioInformation.SAMPLE_RATE);
     }
 }

@@ -6,7 +6,14 @@ import java.awt.*;
 public class SynthContorllerContainer extends JPanel {
     protected boolean on;
     private gui synth;
-    protected Point mouseLocation;
+    private Point mouseLocation;
+    public Point getMouseLocation() {
+        return mouseLocation;
+    }
+
+    public void setMouseLocation(Point mouseLocation) {
+        this.mouseLocation = mouseLocation;
+    }
     public SynthContorllerContainer(gui Synth){
         this.synth = Synth;
     }

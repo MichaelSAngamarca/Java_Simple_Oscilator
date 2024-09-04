@@ -35,7 +35,6 @@ public class AudioThread extends Thread{
         start();
     }
 
-
     @Override
     public synchronized void run(){
         while(!closed){

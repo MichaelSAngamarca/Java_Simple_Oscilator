@@ -9,10 +9,9 @@ import java.awt.event.WindowEvent;
 import java.util.*;
 public class gui {
     private boolean shouldGenerate; //boolean flag to control if audio should be playing
-    private int wavePosition;//position of the audio signal
     private Oscilattor[] oscilattors = new Oscilattor[3];
     private static final HashMap<Character,Double> KEY_FREQ = new HashMap<>(); //Hashmap in order to store the characters of the midi controller and the frequencies that correlate to that note
-
+    private final WaveViewer waveViewer = new WaveViewer(oscilattors);
     static{
         final int Starting_key = 16;
         final int key_freq_increment = 2;
@@ -69,6 +68,8 @@ public class gui {
             window.add(oscilattors[i]);
             y += 105;
         }
+        waveViewer.setBounds(290,0,320,300);
+        window.add(waveViewer);
         window.addKeyListener(keyListener);
         window.addWindowListener(new WindowAdapter() {
             @Override
@@ -77,7 +78,7 @@ public class gui {
             }
         });
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        window.setSize(600,350);
+        window.setSize(640,345);
         window.setResizable(false);
         window.setLayout(null);
         window.setLocationRelativeTo(null);
@@ -88,9 +89,12 @@ public class gui {
         return keyListener;
     }
 
+    public void updateWaveViewer(){
+        waveViewer.repaint();
+    }
     /*/
         Set the Sample_Rate for the audio thread of 44100;
-         */
+    */
     public static class AudioInformation{
         public static int SAMPLE_RATE = 44100;
     }
